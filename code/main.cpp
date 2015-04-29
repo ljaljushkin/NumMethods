@@ -28,13 +28,13 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  crsMatrix A;
+  mtxMatrix A;
   double *x, *b, *bm;
   double timeM=0, timeM1=0, diff=0;
 
   if (ReadMatrix(A, mtxFileName) != 0)
   {
-    GenerateRegularCRS(1, N, NZ, A);
+    GenerateRegularMTX(1, N, NZ, A);
     WriteMatrix(A, "mtx.txt");
   }
   if (ReadVector(&x, N, vecFileName) != 0)
@@ -46,21 +46,21 @@ int main(int argc, char *argv[])
   InitializeVector(N, &b);
   Multiplicate(A, x, b, timeM);
 
-  InitializeVector(N, &bm);
-  SparseMKLMult(A, x, bm, timeM1);
+  //InitializeVector(N, &bm);
+  //SparseMKLMult(A, x, bm, timeM1);
 
-  CompareVectors(b, bm, N, diff);
+  //CompareVectors(b, bm, N, diff);
 
-  if (diff < EPSILON)
+  //if (diff < EPSILON)
     printf("OK\n");
-  else
-    printf("not OK\n");
+  //else
+    //printf("not OK\n");
   printf("%d %d\n", A.N, A.NZ);
   printf("%.3f %.3f\n", timeM, timeM1);
 
   FreeMatrix(A);
   FreeVector(&b);
-  FreeVector(&bm);
+  //FreeVector(&bm);
   FreeVector(&x);
 
   return 0;

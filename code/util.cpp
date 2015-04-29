@@ -3,15 +3,15 @@
 const double MAX_VAL = 100.0;
 
 // Создает квадратную матрицу в формате CRS (3 массива, индексация с нуля)
-// Выделяет память под поля Value, Col и RowIndex
+// Выделяет память под поля Value, Col и Row
 // Возвращает через параметр mtx
-void InitializeMatrix(int N, int NZ, crsMatrix &mtx)
+void InitializeMatrix(int N, int NZ, mtxMatrix &mtx)
 {
     mtx.N = N;
     mtx.NZ = NZ;
     mtx.Value = new double[NZ];
     mtx.Col = new int[NZ];
-    mtx.RowIndex = new int[N + 1];
+    mtx.Row = new int[NZ];
 }
 
 // Создает вектор из N элементов
@@ -22,11 +22,11 @@ void InitializeVector(int N, double **vec)
 }
 
 // Освобождает память, выделенную под поля mtx
-void FreeMatrix(crsMatrix &mtx)
+void FreeMatrix(mtxMatrix &mtx)
 {
     delete[] mtx.Value;
     delete[] mtx.Col;
-    delete[] mtx.RowIndex;
+    delete[] mtx.Row;
 }
 
 // Освобождает память для вектора
@@ -35,19 +35,18 @@ void FreeVector(double **vec)
     delete [](*vec);
 }
 
-// Создает копию imtx в omtx, выделяя память под поля Value, Col и RowIndex
-void CopyMatrix(crsMatrix imtx, crsMatrix &omtx)
+// Создает копию imtx в omtx, выделяя память под поля Value, Col и Row
+void CopyMatrix(mtxMatrix imtx, mtxMatrix &omtx)
 {
   // Инициализация результирующей матрицы
   int N  = imtx.N;
   int NZ = imtx.NZ;
   InitializeMatrix(N, NZ, omtx);
   // Копирование
-  memcpy(omtx.Value   , imtx.Value   , NZ * sizeof(double));
-  memcpy(omtx.Col     , imtx.Col     , NZ * sizeof(int));
-  memcpy(omtx.RowIndex, imtx.RowIndex, (N + 1) * sizeof(int));
+  memcpy(omtx.Value, imtx.Value, NZ * sizeof(double));
+  memcpy(omtx.Col, imtx.Col, NZ * sizeof(int));
+  memcpy(omtx.Row, imtx.Row, NZ * sizeof(int));
 }
-
 
 double next()
 {
@@ -56,7 +55,7 @@ double next()
 
 // Генерирует квадратную матрицу в формате CRS (3 массива, индексация с нуля)
 // В каждой строке cntInRow ненулевых элементов
-void GenerateRegularCRS(int seed, int N, int cntInRow, crsMatrix& mtx)
+void GenerateRegularMTX(int seed, int N, int cntInRow, mtxMatrix& mtx)
 {
   int i, j, k, f, tmp, notNull, c;
 
@@ -96,10 +95,12 @@ void GenerateRegularCRS(int seed, int N, int cntInRow, crsMatrix& mtx)
 
   // Заполняем массив индексов строк
   c = 0;
-  for (i = 0; i <= N; i++)
+  for (i = 0; i < N; i++)
   {
-    mtx.RowIndex[i] = c;
-    c += cntInRow;
+      for (j = 0; j < cntInRow; j++)
+      {
+          mtx.Row[i*cntInRow + j] = i;
+      }
   }
 }
 
@@ -117,7 +118,7 @@ void GenerateVector(int seed, int N, double **vec)
 // Генерирует квадратную матрицу в формате CRS (3 массива, индексация с нуля)
 // Число ненулевых элементов в строках растет от 1 до cntInRow
 // Закон роста - кубическая парабола
-void GenerateSpecialCRS(int seed, int N, int cntInRow, crsMatrix& mtx)
+void GenerateSpecialCRS(int seed, int N, int cntInRow, mtxMatrix& mtx)
 {
   srand(seed);
   double end = pow((double)cntInRow, 1.0 / 3.0);
@@ -167,8 +168,7 @@ void GenerateSpecialCRS(int seed, int N, int cntInRow, crsMatrix& mtx)
   int sum = 0;
   for (int i = 0; i < N; i++)
   {
-    mtx.RowIndex[i] = sum;
-    sum += columns[i].size();
+    mtx.Row[i] = columns[i].size();
     for (unsigned int j = 0; j < columns[i].size(); j++)
     {
       mtx.Col[count] = columns[i][j];
@@ -176,7 +176,7 @@ void GenerateSpecialCRS(int seed, int N, int cntInRow, crsMatrix& mtx)
       count++;
     }
   }
-  mtx.RowIndex[N] = sum;
+  mtx.Row[N] = columns[N-1].size();
 
   delete [] columns;
 }
@@ -194,55 +194,20 @@ int CompareVectors(double* vec1, double* vec2, int n, double &diff)
     return 0;
 }
 
-int SparseMKLMult(crsMatrix A, double *x, double *b, double &time)
-{
-    // Настроим параметры для вызова функции MKL
-    // Переиндексируем матрицы A и B с единицы
-    int i, j, n = A.N;
-    for (i = 0; i < A.NZ; i++)
-        A.Col[i]++;
-    for (j = 0; j <= n; j++)
-    {
-        A.RowIndex[j]++;
-    }
-
-    // Используется функция, вычисляющая C = op(A) * B
-    char trans = 'N'; // говорит о том, op(A) = A - не нужно транспонировать A
-
-    clock_t start = clock();
-    mkl_dcsrgemv(&trans, &n, A.Value, A.RowIndex, A.Col, x, b);
-    clock_t finish = clock();
-    // Приведем к нормальному виду матрицу A
-    for (i = 0; i < A.NZ; i++)
-        A.Col[i]--;
-    for (j = 0; j <= A.N; j++)
-    {
-        A.RowIndex[j]--;
-    }
-
-    time = double(finish - start) / double(CLOCKS_PER_SEC);
-
-    return 0;
-}
-
-int WriteMatrix(crsMatrix mtx, char *fileName)
+int WriteMatrix(mtxMatrix mtx, char *fileName)
 {
     FILE *f = fopen(fileName, "w+");
     fprintf(f, "%i\n", mtx.NZ);
     fprintf(f, "%i\n", mtx.N);
     for (int i = 0; i < mtx.NZ; i++)
     {
-        fprintf(f, "%lf;%i\n", mtx.Value[i], mtx.Col[i]);
-    }
-    for (int i = 0; i < mtx.N + 1; i++)
-    {
-        fprintf(f, "%i\n", mtx.RowIndex[i]);
+        fprintf(f, "%lf;%i;%i\n", mtx.Value[i], mtx.Col[i], mtx.Row[i]);
     }
     fclose(f);
     return 0;
 }
 
-int ReadMatrix(crsMatrix &mtx, char *fileName)
+int ReadMatrix(mtxMatrix &mtx, char *fileName)
 {
     int N, NZ;
     if (fileName == NULL) return -1;
@@ -253,11 +218,7 @@ int ReadMatrix(crsMatrix &mtx, char *fileName)
     InitializeMatrix(N, NZ, mtx);
     for (int i = 0; i < NZ; i++)
     {
-        fscanf(f, "%lf;%i", &(mtx.Value[i]), &(mtx.Col[i]));
-    }
-    for (int i = 0; i < N + 1; i++)
-    {
-        fscanf(f, "%d", &(mtx.RowIndex[i]));
+        fscanf(f, "%lf;%i;%i", &(mtx.Value[i]), &(mtx.Col[i]), &(mtx.Row[i]));
     }
     fclose(f);
     return 0;
