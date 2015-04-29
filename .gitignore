@@ -389,3 +389,5 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+code/mtx.txt
+code/vec.txt
