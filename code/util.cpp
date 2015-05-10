@@ -200,7 +200,7 @@ int WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode)
     mm_write_banner(output_file, matcode);
     mm_write_mtx_crd_size(output_file, output_mtx.N, output_mtx.N, output_mtx.NZ);
     for (int i=0; i<output_mtx.NZ; i++)
-        fprintf(output_file, "%d %d %.10lf\n", output_mtx.Col[i]+1, output_mtx.Row[i]+1, output_mtx.Value[i]);
+        fprintf(output_file, "%d %d %.10lf\n", output_mtx.Row[i]+1, output_mtx.Col[i]+1, output_mtx.Value[i]);
 
     return 0;
 }

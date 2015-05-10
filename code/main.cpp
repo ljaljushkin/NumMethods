@@ -30,6 +30,26 @@ const double EPSILON = 0.000001;
 //     }
 //}
 
+void getIndexesDiagonalElements(mtxMatrix* A, int* d) {
+    if(A->Row[0] == A->Col[0])
+        d[0] = 0;
+    else
+        d[0] = -1;
+
+    int curr_ind = 1;
+    for(int i = 1; i < A->NZ; i++) {
+        if(A->Row[i] != A->Row[i+1]) {
+            if (A->Row[i+1] == A->Col[i+1]) {
+                d[curr_ind] = i+1;
+            }
+            else {
+                d[curr_ind] = -1;
+            }
+            curr_ind++;
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     FILE *input_file, *output_file, *time_file;
@@ -65,10 +85,23 @@ int main(int argc, char *argv[])
 
     mtxMatrix inputMatrix;
     ReadMatrix(inputMatrix, input_file);
-
-    //ilu0(inputMatrix);
-    
     WriteMatrix(inputMatrix, output_file, matcode);
 
+    int* d= new int[inputMatrix.N];
+    getIndexesDiagonalElements(&inputMatrix, d);
+    
+    for(int i=0; i<inputMatrix.N; i++) {
+        printf("d[%i] = %i\n", i, d[i]);
+    }
+
+     
+
+    for(int i=0; i < inputMatrix.N; i++) {
+        if (d[i] != -1)
+            printf("input[%i]= %lf\n", i, inputMatrix.Value[d[i]]);
+    }
+
+    //ilu0(inputMatrix);
+   
     return 0;
 }
