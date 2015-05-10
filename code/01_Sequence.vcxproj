@@ -180,10 +180,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mmio.cpp" />
     <ClCompile Include="sparse.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mmio.h" />
     <ClInclude Include="sparse.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>

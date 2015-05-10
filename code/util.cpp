@@ -1,4 +1,5 @@
 #include "util.h"
+#include "mmio.h"
 
 const double MAX_VAL = 100.0;
 
@@ -194,59 +195,30 @@ int CompareVectors(double* vec1, double* vec2, int n, double &diff)
     return 0;
 }
 
-int WriteMatrix(mtxMatrix mtx, char *fileName)
+int WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode)
 {
-    FILE *f = fopen(fileName, "w+");
-    fprintf(f, "%i\n", mtx.NZ);
-    fprintf(f, "%i\n", mtx.N);
-    for (int i = 0; i < mtx.NZ; i++)
-    {
-        fprintf(f, "%lf;%i;%i\n", mtx.Value[i], mtx.Col[i], mtx.Row[i]);
-    }
-    fclose(f);
+    mm_write_banner(output_file, matcode);
+    mm_write_mtx_crd_size(output_file, output_mtx.N, output_mtx.N, output_mtx.NZ);
+    for (int i=0; i<output_mtx.NZ; i++)
+        fprintf(output_file, "%d %d %.10lf\n", output_mtx.Col[i]+1, output_mtx.Row[i]+1, output_mtx.Value[i]);
+
     return 0;
 }
 
-int ReadMatrix(mtxMatrix &mtx, char *fileName)
+int ReadMatrix(mtxMatrix &mtx, FILE* inputfile)
 {
-    int N, NZ;
-    if (fileName == NULL) return -1;
-    FILE *f = fopen(fileName, "r");
-    if (f == NULL) return -1;
-    fscanf(f, "%d", &NZ);
-    fscanf(f, "%d", &N);
-    InitializeMatrix(N, NZ, mtx);
-    for (int i = 0; i < NZ; i++)
-    {
-        fscanf(f, "%lf;%i;%i", &(mtx.Value[i]), &(mtx.Col[i]), &(mtx.Row[i]));
-    }
-    fclose(f);
-    return 0;
-}
+    int M, N, nz, ret_code;
+    if ((ret_code = mm_read_mtx_crd_size(inputfile, &M, &N, &nz)) !=0)
+        exit(1);
 
-int WriteVector(double *a, int N, char *fileName)
-{
-    FILE *f = fopen(fileName, "w+");
-    fprintf(f, "%i\n", N);
-    for (int i = 0; i < N; i++)
-    {
-        fprintf(f, "%lf\n", a[i]);
-    }
-    fclose(f);
-    return 0;
-}
+    InitializeMatrix(N, nz, mtx);
 
-int ReadVector(double **a, int &N, char *fileName)
-{
-    if (fileName == NULL) return -1;
-    FILE *f = fopen(fileName, "r");
-    if (f == NULL) return -1;
-    fscanf(f, "%i\n", &N);
-    *a = new double[N];
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < nz; i++)
     {
-        fscanf(f, "%lf\n", &((*a)[i]));
+        fscanf(inputfile, "%i %i %lf", &(mtx.Col[i]), &(mtx.Row[i]), &(mtx.Value[i]));
+        mtx.Col[i]--;
+        mtx.Row[i]--;
     }
-    fclose(f);
+    fclose(inputfile);
     return 0;
 }

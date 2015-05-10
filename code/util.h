@@ -8,6 +8,7 @@
 #include <vector>
 #include "sparse.h"
 #include <stdio.h>
+#include "mmio.h"
 
 // Создает квадратную матрицу в формате CRS (3 массива, индексация с нуля)
 // Выделяет память под поля Value, Col и Row
@@ -43,9 +44,9 @@ void GenerateVector(int seed, int N, double **vec);
 // Закон роста - кубическая парабола
 void GenerateSpecialCRS(int seed, int N, int cntInRow, mtxMatrix& mtx);
 
-int WriteMatrix(mtxMatrix mtx, char *fileName);
+int  WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode);
 
-int ReadMatrix(mtxMatrix &mtx, char *fileName);
+int ReadMatrix(mtxMatrix &mtx, FILE *fileName);
 
 int WriteVector(double *a, int N, char *fileName);
 

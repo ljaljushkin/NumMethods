@@ -1,67 +1,74 @@
 #include <stdio.h>
 #include "sparse.h"
 #include "util.h"
+#include "mmio.h"
 
 const double EPSILON = 0.000001;
 
+//int ilu0(mtxMatrix &A, double * luval, int * uptr)
+//{
+//     int j1, j2; // граница текущей строки
+//     int jrow; // номер текущего столбца
+//     int k, j, jj; // счетчики циклов
+//     int *iw = NULL; // временный массив
+//     int jw;
+//     double t1;
+//
+//     iw = new int[A.N];
+//     memset(iw, 0, A.N * sizeof(int));
+//
+//     memcpy(luval, A.Value, A.NZ * sizeof(double));
+//
+//     for(k = 0; k < A.N; k++)
+//     {
+//        j1 = row[k];
+//        j2 = row[k + 1];
+//        for(j = j1; j < j2; j++)
+//        {
+//            iw[col[j]] = j;
+//        }
+//     }
+//}
+
 int main(int argc, char *argv[])
 {
-  if (argc < 3)
-  {
-    printf("Invalid input parameters\n");
-    return 1;
-  }
+    FILE *input_file, *output_file, *time_file;
+    if (argc < 4)
+	{
+        fprintf(stderr, "Invalid input parameters\n");
+		fprintf(stderr, "Usage: %s inputfile outputfile timefile \n", argv[0]);
+		exit(1);
+	}
+    else    
+    { 
+        input_file = fopen(argv[1], "r");
+        output_file = fopen(argv[2], "w");
+        time_file = fopen(argv[3], "w");
+        if(!input_file || !output_file || !time_file)
+            exit(1);
+    }
+
+    MM_typecode matcode;
+    if (mm_read_banner(input_file, &matcode) != 0)
+    {
+        printf("Could not process Matrix Market banner.\n");
+        exit(1);
+    }
   
-  int N = atoi(argv[1]);
-  int NZ = atoi(argv[2]);
-  char *mtxFileName = NULL;
-  char *vecFileName = NULL;
-  if (argc > 3 && argc < 6)
-  {
-      mtxFileName = argv[3];
-      vecFileName = argv[4];
-  }
+    if (!mm_is_matrix(matcode) || !mm_is_real(matcode) ||
+        !mm_is_coordinate(matcode) || !mm_is_symmetric(matcode))
+    {
+        printf("Sorry, this application does not support ");
+        printf("Market Market type: [%s]\n", mm_typecode_to_str(matcode));
+        exit(1);
+    }
 
-  if ((NZ > N) || (N <= 0) || (NZ <= 0))
-  {
-    printf("Incorrect arguments of main\n");
-    return 1;
-  }
+    mtxMatrix inputMatrix;
+    ReadMatrix(inputMatrix, input_file);
 
-  mtxMatrix A;
-  double *x, *b, *bm;
-  double timeM=0, timeM1=0, diff=0;
+    //ilu0(inputMatrix);
+    
+    WriteMatrix(inputMatrix, output_file, matcode);
 
-  if (ReadMatrix(A, mtxFileName) != 0)
-  {
-    GenerateRegularMTX(1, N, NZ, A);
-    WriteMatrix(A, "mtx.txt");
-  }
-  if (ReadVector(&x, N, vecFileName) != 0)
-  {
-    GenerateVector(2, N, &x);
-    WriteVector(x, N, "vec.txt");
-  }
-
-  InitializeVector(N, &b);
-  Multiplicate(A, x, b, timeM);
-
-  //InitializeVector(N, &bm);
-  //SparseMKLMult(A, x, bm, timeM1);
-
-  //CompareVectors(b, bm, N, diff);
-
-  //if (diff < EPSILON)
-    printf("OK\n");
-  //else
-    //printf("not OK\n");
-  printf("%d %d\n", A.N, A.NZ);
-  printf("%.3f %.3f\n", timeM, timeM1);
-
-  FreeMatrix(A);
-  FreeVector(&b);
-  //FreeVector(&bm);
-  FreeVector(&x);
-
-  return 0;
+    return 0;
 }
