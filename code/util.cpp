@@ -13,6 +13,7 @@ void InitializeMatrix(int N, int NZ, mtxMatrix &mtx)
     mtx.Value = new double[NZ];
     mtx.Col = new int[NZ];
     mtx.Row = new int[NZ];
+	mtx.RowIndex = new int[N + 1];
 }
 
 // Создает вектор из N элементов
@@ -215,7 +216,7 @@ int ReadMatrix(mtxMatrix &mtx, FILE* inputfile)
 
     for (int i = 0; i < nz; i++)
     {
-        fscanf(inputfile, "%i %i %lf", &(mtx.Col[i]), &(mtx.Row[i]), &(mtx.Value[i]));
+        fscanf(inputfile, "%i %i %lf", &(mtx.Row[i]), &(mtx.Col[i]), &(mtx.Value[i]));
         mtx.Col[i]--;
         mtx.Row[i]--;
     }

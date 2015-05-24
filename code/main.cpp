@@ -30,21 +30,84 @@ const double EPSILON = 0.000001;
 //     }
 //}
 
-void getIndexesDiagonalElements(mtxMatrix* A, int* d) {
-    if(A->Row[0] == A->Col[0])
-        d[0] = 0;
-    else
-        d[0] = -1;
+// swap entries in array v at positions i and j; used by quicksort
+void swap(int * v, int i, int j)
+{
+  int t = v[i];
+  v[i] = v[j];
+  v[j] = t;
+}
 
-    int curr_ind = 1;
-    for(int i = 1; i < A->NZ; i++) {
+void swapd(double * v, int i, int j)
+{
+  double t = v[i];
+  v[i] = v[j];
+  v[j] = t;
+}
+
+
+// (quick) sort slice of array v; slice starts at s and is of length n
+void quicksort(int * row, int * col, double * val, int s, int n)
+{
+  int x, p, i;
+  // base case?
+  if (n <= 1)
+    return;
+  // pick pivot and swap with first element
+  x = row[s + n/2];
+  swap(row, s, s + n/2);
+  swap(col, s, s + n/2);
+  swapd(val, s, s + n/2);
+  // partition slice starting at s+1
+  p = s;
+  for (i = s+1; i < s+n; i++)
+    if (row[i] < x) {
+      p++;
+      swap(row, i, p);
+	  swap(col, i, p);
+	  swapd(val, i, p);
+    }
+  // swap pivot into place
+  swap(row, s, p);
+  swap(col, s, p);
+  swapd(val, s, p);
+  // recurse into partition
+  quicksort(row, col, val, s, p-s);
+  quicksort(row, col, val, p+1, s+n-p-1);
+}
+
+void colQuickSort(int * col, double * val, int s, int n) {
+  int x, p, i;
+  // base case?
+  if (n <= 1)
+    return;
+  // pick pivot and swap with first element
+  x = col[s + n/2];
+  swap(col, s, s + n/2);
+  swapd(val, s, s + n/2);
+  // partition slice starting at s+1
+  p = s;
+  for (i = s+1; i < s+n; i++)
+    if (col[i] < x) {
+      p++;
+      swap(col, i, p);
+	  swapd(val, i, p);
+    }
+  // swap pivot into place
+  swap(col, s, p);
+  swapd(val, s, p);
+  // recurse into partition
+  colQuickSort(col, val, s, p-s);
+  colQuickSort(col, val, p+1, s+n-p-1);
+}
+
+void getRowIndex(mtxMatrix* A, int* d) {
+    int curr_ind = 0;
+	d[curr_ind] = 0;
+	curr_ind++;
+    for(int i = 0; i < A->NZ; i++) {
         if(A->Row[i] != A->Row[i+1]) {
-            if (A->Row[i+1] == A->Col[i+1]) {
-                d[curr_ind] = i+1;
-            }
-            else {
-                d[curr_ind] = -1;
-            }
+            d[curr_ind] = i+1;
             curr_ind++;
         }
     }
@@ -85,20 +148,28 @@ int main(int argc, char *argv[])
 
     mtxMatrix inputMatrix;
     ReadMatrix(inputMatrix, input_file);
-    WriteMatrix(inputMatrix, output_file, matcode);
 
-    int* d= new int[inputMatrix.N];
-    getIndexesDiagonalElements(&inputMatrix, d);
+	quicksort(inputMatrix.Row, inputMatrix.Col, inputMatrix.Value, 0, inputMatrix.NZ);
+
+    getRowIndex(&inputMatrix, inputMatrix.RowIndex);
+	inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
     
-    for(int i=0; i<inputMatrix.N; i++) {
-        printf("d[%i] = %i\n", i, d[i]);
+	for(int i = 0; i < inputMatrix.N + 1; i++) {
+        for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
+			colQuickSort(inputMatrix.Col + inputMatrix.RowIndex[i], inputMatrix.Value + inputMatrix.RowIndex[i], 0, inputMatrix.RowIndex[i + 1] - inputMatrix.RowIndex[i]);
+		}
+    }
+
+	WriteMatrix(inputMatrix, output_file, matcode);
+
+    for(int i = 0; i < inputMatrix.N + 1; i++) {
+        printf("RowIndex[%i] = %i\n", i, inputMatrix.RowIndex[i]);
     }
 
      
-
-    for(int i=0; i < inputMatrix.N; i++) {
-        if (d[i] != -1)
-            printf("input[%i]= %lf\n", i, inputMatrix.Value[d[i]]);
+    for(int i = 0; i < inputMatrix.N; i++) {
+        if (inputMatrix.RowIndex[i] != -1)
+            printf("input[%i]= %lf\n", i, inputMatrix.Value[inputMatrix.RowIndex[i]]);
     }
 
     //ilu0(inputMatrix);
