@@ -5,30 +5,61 @@
 
 const double EPSILON = 0.000001;
 
-//int ilu0(mtxMatrix &A, double * luval, int * uptr)
-//{
-//     int j1, j2; // граница текущей строки
-//     int jrow; // номер текущего столбца
-//     int k, j, jj; // счетчики циклов
-//     int *iw = NULL; // временный массив
-//     int jw;
-//     double t1;
-//
-//     iw = new int[A.N];
-//     memset(iw, 0, A.N * sizeof(int));
-//
-//     memcpy(luval, A.Value, A.NZ * sizeof(double));
-//
-//     for(k = 0; k < A.N; k++)
-//     {
-//        j1 = row[k];
-//        j2 = row[k + 1];
-//        for(j = j1; j < j2; j++)
-//        {
-//            iw[col[j]] = j;
-//        }
-//     }
-//}
+
+int ilu0(mtxMatrix &A, double * luval, int * uptr)
+{
+     int j1, j2; // граница текущей строки
+     int jrow; // номер текущего столбца
+     int k, j, jj; // счетчики циклов
+     int *iw = NULL; // временный массив
+     int jw;
+     double t1;
+
+     iw = new int[A.N];
+     memset(iw, 0, A.N * sizeof(int));
+
+     memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
+
+     for(k = 0; k < A.N; k++)
+     {
+        j1 = A.RowIndex[k];
+        j2 = A.RowIndex[k + 1];
+        for(j = j1; j < j2; j++)
+        {
+            iw[A.Col[j]] = j;
+        }
+		for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+		{
+			jrow = A.Col[j];
+			t1 = luval[j] / luval[uptr[jrow]];
+			luval[j] = t1;
+
+			for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
+			{
+				jw = iw[A.Col[jj]];
+				if(jw != 0)
+				{
+					luval[jw] = luval[jw] - t1 * luval[jj];
+				}
+			}
+		}
+		jrow = A.Col[j];
+		uptr[k] = j;
+		if((jrow != k) || (fabs(luval[j]) < EPSILON))
+		{
+			break;
+		}
+		for(j = j1; j < j2; j++)
+		{
+			iw[A.Col[j]] = 0;
+		}
+	 }
+
+	 delete [] iw;
+	 if(k < A.N)
+		 return -(k+1);
+	 return 0;
+}
 
 // swap entries in array v at positions i and j; used by quicksort
 void swap(int * v, int i, int j)
@@ -153,6 +184,8 @@ int main(int argc, char *argv[])
 
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
 	inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
+
+	int *diag = new int[inputMatrix.N];
     
 	for(int i = 0; i < inputMatrix.N + 1; i++) {
         for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
@@ -160,7 +193,13 @@ int main(int argc, char *argv[])
 		}
     }
 
-	WriteMatrix(inputMatrix, output_file, matcode);
+	for(int i = 0; i < inputMatrix.N + 1; i++) {
+        for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
+			if (i == inputMatrix.Col[j]) diag[i] = j;
+		}
+    }
+
+	
 
     for(int i = 0; i < inputMatrix.N + 1; i++) {
         printf("RowIndex[%i] = %i\n", i, inputMatrix.RowIndex[i]);
@@ -168,11 +207,19 @@ int main(int argc, char *argv[])
 
      
     for(int i = 0; i < inputMatrix.N; i++) {
-        if (inputMatrix.RowIndex[i] != -1)
             printf("input[%i]= %lf\n", i, inputMatrix.Value[inputMatrix.RowIndex[i]]);
     }
 
-    //ilu0(inputMatrix);
+	for(int i = 0; i < inputMatrix.N; i++) {
+            printf("diag[%i]= %d\n", i, diag[i]);
+    }
+
+    ilu0(inputMatrix, inputMatrix.Value, diag);
+
+	/*for(int i = 0; i < inputMatrix.NZ; i++) {
+            printf("Value[%i]= %lf\n", i, inputMatrix.Value[i]);
+    }*/
+	WriteMatrix(inputMatrix, output_file, matcode);
    
     return 0;
 }
