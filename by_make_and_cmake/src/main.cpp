@@ -3,16 +3,17 @@
 #include "mmio.h"
 #include "timer.h"
 #include <fstream>
+#include "memory.h"
 
 const double EPSILON = 0.000001;
 
 
 int ilu0(mtxMatrix &A, double * luval, int * uptr)
 {
-     int j1, j2; // граница текущей строки
-     int jrow; // номер текущего столбца
-     int k, j, jj; // счетчики циклов
-     int *iw = NULL; // временный массив
+     int j1, j2; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+     int jrow; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     int k, j, jj; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+     int *iw = NULL; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
      int jw;
      double t1;
 

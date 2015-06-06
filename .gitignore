@@ -391,3 +391,6 @@ FakesAssemblies/
 *.opt
 code/mtx.txt
 code/vec.txt
+
+#CLion
+.idea/
