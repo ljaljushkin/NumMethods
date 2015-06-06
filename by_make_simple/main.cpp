@@ -1,3 +1,4 @@
+//#include <stdio.h>
 #include "util.h"
 #include "mmio.h"
 #include "timer.h"
