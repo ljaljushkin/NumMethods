@@ -394,3 +394,4 @@ code/vec.txt
 
 #CLion
 .idea/
+__cmake

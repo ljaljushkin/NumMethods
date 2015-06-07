@@ -3,11 +3,18 @@ project(serial)
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-set(SOURCE_FILES
+set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/mmio.cpp
     ${CMAKE_SOURCE_DIR}/src/util.cpp)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(HEADERS
+    ${CMAKE_SOURCE_DIR}/include/timer.h
+    ${CMAKE_SOURCE_DIR}/include/mmio.h
+    ${CMAKE_SOURCE_DIR}/include/util.h)
 
-add_executable(solution ${SOURCE_FILES})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/)
+
+add_executable(solution 
+    ${SOURCES}
+    ${HEADERS})
