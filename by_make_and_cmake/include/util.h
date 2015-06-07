@@ -9,14 +9,14 @@
 
 struct mtxMatrix
 {
-  int N;
-  int NZ;
+    int N;
+    int NZ;
 
-  double* Value;
-  int* Col;
-  int* Row;
+    double* Value;
+    int* Col;
+    int* Row;
 
-  int* RowIndex;
+    int* RowIndex;
 };
 
 void InitializeMatrix(int N, int NZ, mtxMatrix &mtx);

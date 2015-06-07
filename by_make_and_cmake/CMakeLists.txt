@@ -13,8 +13,8 @@ set(HEADERS
     ${CMAKE_SOURCE_DIR}/include/mmio.h
     ${CMAKE_SOURCE_DIR}/include/util.h)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/)
 
-add_executable(solution 
+add_executable(solution
     ${SOURCES}
     ${HEADERS})

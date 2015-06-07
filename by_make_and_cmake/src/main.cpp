@@ -1,6 +1,4 @@
-//#include <stdio.h>
 #include "util.h"
-#include "mmio.h"
 #include "timer.h"
 #include <fstream>
 #include "memory.h"
@@ -10,10 +8,10 @@ const double EPSILON = 0.000001;
 
 int ilu0(mtxMatrix &A, double * luval, int * uptr)
 {
-     int j1, j2; // ������� ������� ������
-     int jrow; // ����� �������� �������
-     int k, j, jj; // �������� ������
-     int *iw = NULL; // ��������� ������
+     int j1, j2;
+     int jrow;
+     int k, j, jj;
+     int *iw = NULL;
      int jw;
      double t1;
 
@@ -30,37 +28,37 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
         {
             iw[A.Col[j]] = j;
         }
-		for(j = j1; (j < j2) && (A.Col[j] < k); j++)
-		{
-			jrow = A.Col[j];
-			t1 = luval[j] / luval[uptr[jrow]];
-			luval[j] = t1;
+        for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+        {
+            jrow = A.Col[j];
+            t1 = luval[j] / luval[uptr[jrow]];
+            luval[j] = t1;
 
-			for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
-			{
-				jw = iw[A.Col[jj]];
-				if(jw != 0)
-				{
-					luval[jw] = luval[jw] - t1 * luval[jj];
-				}
-			}
-		}
-		jrow = A.Col[j];
-		uptr[k] = j;
-		if((jrow != k) || (fabs(luval[j]) < EPSILON))
-		{
-			break;
-		}
-		for(j = j1; j < j2; j++)
-		{
-			iw[A.Col[j]] = 0;
-		}
-	 }
+            for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
+            {
+                jw = iw[A.Col[jj]];
+                if(jw != 0)
+                {
+                    luval[jw] = luval[jw] - t1 * luval[jj];
+                }
+            }
+        }
+        jrow = A.Col[j];
+        uptr[k] = j;
+        if((jrow != k) || (fabs(luval[j]) < EPSILON))
+        {
+            break;
+        }
+        for(j = j1; j < j2; j++)
+        {
+            iw[A.Col[j]] = 0;
+        }
+     }
 
-	 delete [] iw;
-	 if(k < A.N)
-		 return -(k+1);
-	 return 0;
+     delete [] iw;
+     if(k < A.N)
+         return -(k+1);
+     return 0;
 }
 
 // swap entries in array v at positions i and j; used by quicksort
@@ -97,8 +95,8 @@ void quicksort(int * row, int * col, double * val, int s, int n)
     if (row[i] < x) {
       p++;
       swap(row, i, p);
-	  swap(col, i, p);
-	  swapd(val, i, p);
+      swap(col, i, p);
+      swapd(val, i, p);
     }
   // swap pivot into place
   swap(row, s, p);
@@ -124,7 +122,7 @@ void colQuickSort(int * col, double * val, int s, int n) {
     if (col[i] < x) {
       p++;
       swap(col, i, p);
-	  swapd(val, i, p);
+      swapd(val, i, p);
     }
   // swap pivot into place
   swap(col, s, p);
@@ -136,8 +134,8 @@ void colQuickSort(int * col, double * val, int s, int n) {
 
 void getRowIndex(mtxMatrix* A, int* d) {
     int curr_ind = 0;
-	d[curr_ind] = 0;
-	curr_ind++;
+    d[curr_ind] = 0;
+    curr_ind++;
     for(int i = 0; i < A->NZ; i++) {
         if(A->Row[i] != A->Row[i+1]) {
             d[curr_ind] = i+1;
@@ -150,13 +148,13 @@ int main(int argc, char *argv[])
 {
     FILE *input_file, *output_file, *time_file;
     if (argc < 4)
-	{
+    {
         fprintf(stderr, "Invalid input parameters\n");
-		fprintf(stderr, "Usage: %s inputfile outputfile timefile \n", argv[0]);
-		exit(1);
-	}
-    else    
-    { 
+        fprintf(stderr, "Usage: %s inputfile outputfile timefile \n", argv[0]);
+        exit(1);
+    }
+    else
+    {
         input_file = fopen(argv[1], "r");
         output_file = fopen(argv[2], "w");
         time_file = fopen(argv[3], "w");
@@ -170,7 +168,7 @@ int main(int argc, char *argv[])
         printf("Could not process Matrix Market banner.\n");
         exit(1);
     }
-  
+
     if (!mm_is_matrix(matcode) || !mm_is_real(matcode) || !mm_is_coordinate(matcode))
     {
         printf("Sorry, this application does not support ");
@@ -183,36 +181,36 @@ int main(int argc, char *argv[])
 
     Timer timer;
     timer.start();
-    
-	quicksort(inputMatrix.Row, inputMatrix.Col, inputMatrix.Value, 0, inputMatrix.NZ);
+
+    quicksort(inputMatrix.Row, inputMatrix.Col, inputMatrix.Value, 0, inputMatrix.NZ);
 
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
-	inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
+    inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
-	int *diag = new int[inputMatrix.N];
-    
-	for(int i = 0; i < inputMatrix.N + 1; i++) {
+    int *diag = new int[inputMatrix.N];
+
+    for(int i = 0; i < inputMatrix.N + 1; i++) {
         for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
-			colQuickSort(inputMatrix.Col + inputMatrix.RowIndex[i], inputMatrix.Value + inputMatrix.RowIndex[i], 0, inputMatrix.RowIndex[i + 1] - inputMatrix.RowIndex[i]);
-		}
+            colQuickSort(inputMatrix.Col + inputMatrix.RowIndex[i], inputMatrix.Value + inputMatrix.RowIndex[i], 0, inputMatrix.RowIndex[i + 1] - inputMatrix.RowIndex[i]);
+        }
     }
 
-	for(int i = 0; i < inputMatrix.N + 1; i++) {
+    for(int i = 0; i < inputMatrix.N + 1; i++) {
         for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
-			if (i == inputMatrix.Col[j]) diag[i] = j;
-		}
+            if (i == inputMatrix.Col[j]) diag[i] = j;
+        }
     }
 
     for(int i = 0; i < inputMatrix.N + 1; i++) {
         printf("RowIndex[%i] = %i\n", i, inputMatrix.RowIndex[i]);
     }
 
-     
+
     for(int i = 0; i < inputMatrix.N; i++) {
             printf("input[%i]= %lf\n", i, inputMatrix.Value[inputMatrix.RowIndex[i]]);
     }
 
-	for(int i = 0; i < inputMatrix.N; i++) {
+    for(int i = 0; i < inputMatrix.N; i++) {
             printf("diag[%i]= %d\n", i, diag[i]);
     }
 
@@ -223,10 +221,12 @@ int main(int argc, char *argv[])
     timeLog.open(argv[3]);
     timeLog << timer.getElapsed();
 
-	/*for(int i = 0; i < inputMatrix.NZ; i++) {
+    /*for(int i = 0; i < inputMatrix.NZ; i++) {
             printf("Value[%i]= %lf\n", i, inputMatrix.Value[i]);
     }*/
-	WriteMatrix(inputMatrix, output_file, matcode);
-   
+    WriteMatrix(inputMatrix, output_file, matcode);
+
+    FreeMatrix(inputMatrix);
+
     return 0;
 }
