@@ -201,18 +201,17 @@ int main(int argc, char *argv[])
         }
     }
 
-    for(int i = 0; i < inputMatrix.N + 1; i++) {
-        printf("RowIndex[%i] = %i\n", i, inputMatrix.RowIndex[i]);
-    }
-
-
-    for(int i = 0; i < inputMatrix.N; i++) {
-            printf("input[%i]= %lf\n", i, inputMatrix.Value[inputMatrix.RowIndex[i]]);
-    }
-
-    for(int i = 0; i < inputMatrix.N; i++) {
-            printf("diag[%i]= %d\n", i, diag[i]);
-    }
+//    for(int i = 0; i < inputMatrix.N + 1; i++) {
+//        printf("RowIndex[%i] = %i\n", i, inputMatrix.RowIndex[i]);
+//    }
+//
+//    for(int i = 0; i < inputMatrix.N; i++) {
+//            printf("input[%i]= %lf\n", i, inputMatrix.Value[inputMatrix.RowIndex[i]]);
+//    }
+//
+//    for(int i = 0; i < inputMatrix.N; i++) {
+//            printf("diag[%i]= %d\n", i, diag[i]);
+//    }
 
     ilu0(inputMatrix, inputMatrix.Value, diag);
 
@@ -221,9 +220,6 @@ int main(int argc, char *argv[])
     timeLog.open(argv[3]);
     timeLog << timer.getElapsed();
 
-    /*for(int i = 0; i < inputMatrix.NZ; i++) {
-            printf("Value[%i]= %lf\n", i, inputMatrix.Value[i]);
-    }*/
     WriteMatrix(inputMatrix, output_file, matcode);
 
     FreeMatrix(inputMatrix);
