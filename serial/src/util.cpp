@@ -1,5 +1,4 @@
 #include "util.h"
-#include "mmio.h"
 
 void InitializeMatrix(int N, int NZ, mtxMatrix &mtx)
 {
@@ -8,7 +7,7 @@ void InitializeMatrix(int N, int NZ, mtxMatrix &mtx)
     mtx.Value = new double[NZ];
     mtx.Col = new int[NZ];
     mtx.Row = new int[NZ];
-	mtx.RowIndex = new int[N + 1];
+    mtx.RowIndex = new int[N + 1];
 }
 
 void FreeMatrix(mtxMatrix &mtx)
@@ -16,6 +15,7 @@ void FreeMatrix(mtxMatrix &mtx)
     delete[] mtx.Value;
     delete[] mtx.Col;
     delete[] mtx.Row;
+    delete[] mtx.RowIndex;
 }
 
 int WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode)
@@ -30,8 +30,8 @@ int WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode)
 
 int ReadMatrix(mtxMatrix &mtx, FILE* inputfile)
 {
-    int M, N, nz, ret_code;
-    if ((ret_code = mm_read_mtx_crd_size(inputfile, &M, &N, &nz)) !=0)
+    int M, N, nz;
+    if (mm_read_mtx_crd_size(inputfile, &M, &N, &nz) !=0)
         exit(1);
 
     InitializeMatrix(N, nz, mtx);

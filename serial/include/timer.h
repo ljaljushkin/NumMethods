@@ -1,18 +1,6 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-
-/* Кроссплатформенный таймер для Windows- и нестарых *nix-систем.
-Использование:
-... [действия, которые не надо таймировать: чтение из файла и т.д.]
-Timer timer;
-timer.start();
-... [действия, которые надо таймировать, - вычислительная часть программы]
-timer.stop();
-double timeInSeconds = timer.getElapsed();
-... [timeInSeconds - замеренное время в секундах, его надо вывести в файл]
-*/
-
 #ifdef _WIN32
 
 #include <windows.h>
@@ -59,7 +47,9 @@ public:
         
     void reset() { total = 0; }
         
-    void start() { clock_gettime(CLOCK_MONOTONIC, &last_start); }
+    void start() {
+        clock_gettime(CLOCK_MONOTONIC, &last_start);
+    }
         
     void stop() {
         timespec now;
@@ -76,7 +66,6 @@ private:
     long long total;
 };
 
-#endif
+#endif // #ifdef _WIN32
 
-
-#endif
+#endif // #ifndef TIMER_H
