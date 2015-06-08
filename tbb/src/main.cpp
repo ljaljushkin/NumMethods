@@ -1,4 +1,5 @@
 #include "util.h"
+#include "mmio.h"
 #include "timer.h"
 #include <fstream>
 #include "memory.h"
@@ -56,80 +57,11 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
      }
 
      delete [] iw;
-     if(k < A.N)
+     if(k < A.N) {
          return -(k+1);
+     }
+
      return 0;
-}
-
-// swap entries in array v at positions i and j; used by quicksort
-void swap(int * v, int i, int j)
-{
-  int t = v[i];
-  v[i] = v[j];
-  v[j] = t;
-}
-
-void swapd(double * v, int i, int j)
-{
-  double t = v[i];
-  v[i] = v[j];
-  v[j] = t;
-}
-
-
-// (quick) sort slice of array v; slice starts at s and is of length n
-void quicksort(int * row, int * col, double * val, int s, int n)
-{
-  int x, p, i;
-  // base case?
-  if (n <= 1)
-    return;
-  // pick pivot and swap with first element
-  x = row[s + n/2];
-  swap(row, s, s + n/2);
-  swap(col, s, s + n/2);
-  swapd(val, s, s + n/2);
-  // partition slice starting at s+1
-  p = s;
-  for (i = s+1; i < s+n; i++)
-    if (row[i] < x) {
-      p++;
-      swap(row, i, p);
-      swap(col, i, p);
-      swapd(val, i, p);
-    }
-  // swap pivot into place
-  swap(row, s, p);
-  swap(col, s, p);
-  swapd(val, s, p);
-  // recurse into partition
-  quicksort(row, col, val, s, p-s);
-  quicksort(row, col, val, p+1, s+n-p-1);
-}
-
-void colQuickSort(int * col, double * val, int s, int n) {
-  int x, p, i;
-  // base case?
-  if (n <= 1)
-    return;
-  // pick pivot and swap with first element
-  x = col[s + n/2];
-  swap(col, s, s + n/2);
-  swapd(val, s, s + n/2);
-  // partition slice starting at s+1
-  p = s;
-  for (i = s+1; i < s+n; i++)
-    if (col[i] < x) {
-      p++;
-      swap(col, i, p);
-      swapd(val, i, p);
-    }
-  // swap pivot into place
-  swap(col, s, p);
-  swapd(val, s, p);
-  // recurse into partition
-  colQuickSort(col, val, s, p-s);
-  colQuickSort(col, val, p+1, s+n-p-1);
 }
 
 void getRowIndex(mtxMatrix* A, int* d) {
@@ -176,53 +108,55 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    mtxMatrix inputMatrix;
+    mtxMatrix inputMatrix, fullMatrix;
     ReadMatrix(inputMatrix, input_file);
 
     Timer timer;
-    timer.start();
-
-    quicksort(inputMatrix.Row, inputMatrix.Col, inputMatrix.Value, 0, inputMatrix.NZ);
 
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
     inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
-    int *diag = new int[inputMatrix.N];
+	if (mm_is_symmetric(matcode))
+	{
+		InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - inputMatrix.N, fullMatrix);
+		TriangleToFull(&inputMatrix, &fullMatrix);
+	}
+	else
+		fullMatrix = inputMatrix;
 
-    for(int i = 0; i < inputMatrix.N + 1; i++) {
-        for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
-            colQuickSort(inputMatrix.Col + inputMatrix.RowIndex[i], inputMatrix.Value + inputMatrix.RowIndex[i], 0, inputMatrix.RowIndex[i + 1] - inputMatrix.RowIndex[i]);
-        }
+	int *diag = new int[fullMatrix.N];
+
+	for(int i = 0; i < fullMatrix.N + 1; i++) {
+        for(int j = fullMatrix.RowIndex[i]; j < fullMatrix.RowIndex[i + 1]; j++) {
+			if (i == fullMatrix.Col[j]) diag[i] = j;
+		}
     }
 
-    for(int i = 0; i < inputMatrix.N + 1; i++) {
-        for(int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
-            if (i == inputMatrix.Col[j]) diag[i] = j;
-        }
+    for(int i = 0; i < fullMatrix.N + 1; i++) {
+        printf("RowIndex[%i] = %i\n", i, fullMatrix.RowIndex[i]);
     }
 
-//    for(int i = 0; i < inputMatrix.N + 1; i++) {
-//        printf("RowIndex[%i] = %i\n", i, inputMatrix.RowIndex[i]);
-//    }
-//
-//    for(int i = 0; i < inputMatrix.N; i++) {
-//            printf("input[%i]= %lf\n", i, inputMatrix.Value[inputMatrix.RowIndex[i]]);
-//    }
-//
-//    for(int i = 0; i < inputMatrix.N; i++) {
-//            printf("diag[%i]= %d\n", i, diag[i]);
-//    }
+     
+    for(int i = 0; i < fullMatrix.N; i++) {
+            printf("input[%i]= %lf\n", i, fullMatrix.Value[inputMatrix.RowIndex[i]]);
+    }
 
-    ilu0(inputMatrix, inputMatrix.Value, diag);
+	for(int i = 0; i < fullMatrix.N; i++) {
+            printf("diag[%i]= %d\n", i, diag[i]);
+    }
 
+    timer.start();
+    ilu0(fullMatrix, fullMatrix.Value, diag);
     timer.stop();
+
     std::ofstream timeLog;
     timeLog.open(argv[3]);
     timeLog << timer.getElapsed();
 
-    WriteMatrix(inputMatrix, output_file, matcode);
+    WriteFullMatrix(fullMatrix, output_file, matcode);
 
     FreeMatrix(inputMatrix);
+    FreeMatrix(fullMatrix);
 
     return 0;
 }
