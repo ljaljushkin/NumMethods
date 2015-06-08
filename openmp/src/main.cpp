@@ -29,8 +29,20 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
         {
             iw[A.Col[j]] = j;
         }
-        for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+
+        boolean flag = true;
+        if ((j1 >= j2) || (A.Col[j1] >= k)) 
         {
+            flag = false;
+        }
+
+        for(j = j1; flag; j++)
+        {
+            if ((j >= j2) || (A.Col[j] >= k)) 
+            {
+                flag = false;
+            }
+
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
@@ -46,10 +58,11 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
         }
         jrow = A.Col[j];
         uptr[k] = j;
-        if((jrow != k) || (fabs(luval[j]) < EPSILON))
+        // TODO: how to avoid break?
+        /*if((jrow != k) || (fabs(luval[j]) < EPSILON))
         {
             break;
-        }
+        }*/
         for(j = j1; j < j2; j++)
         {
             iw[A.Col[j]] = 0;
