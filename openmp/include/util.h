@@ -7,23 +7,28 @@
 #include <stdio.h>
 #include "mmio.h"
 
-struct mtxMatrix
-{
+struct mtxMatrix {
     int N;
     int NZ;
 
-    double* Value;
-    int* Col;
-    int* Row;
+    double *Value;
+    int *Col;
+    int *Row;
 
-    int* RowIndex;
+    int *RowIndex;
 };
 
 void InitializeMatrix(int N, int NZ, mtxMatrix &mtx);
+
 void FreeMatrix(mtxMatrix &mtx);
-void TriangleToFull(mtxMatrix* mtx, mtxMatrix* fullMatrix);
-int  WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode);
-int  WriteFullMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode);
+
+void TriangleToFull(mtxMatrix *mtx, mtxMatrix *fullMatrix);
+
+int WriteMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode);
+
+int WriteFullMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcode);
+
 int ReadMatrix(mtxMatrix &mtx, FILE *fileName);
 
 #endif // __UTIL_H__
+

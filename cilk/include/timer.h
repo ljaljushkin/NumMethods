@@ -39,25 +39,24 @@ private:
 
 #include <time.h>
 
-class Timer
-{
+class Timer {
 public:
 
     Timer() { reset(); }
-        
+
     void reset() { total = 0; }
-        
+
     void start() {
         clock_gettime(CLOCK_MONOTONIC, &last_start);
     }
-        
+
     void stop() {
         timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         total += (now.tv_sec - last_start.tv_sec) * 1000000000LL
-            + now.tv_nsec - last_start.tv_nsec;
+                 + now.tv_nsec - last_start.tv_nsec;
     }
-        
+
     double getElapsed() { return total / 1e9; }
 
 private:

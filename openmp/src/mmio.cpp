@@ -452,24 +452,22 @@ char *mm_strdup(const char *s)
     return strcpy(s2, s);
 }
 
-char  *mm_typecode_to_str(MM_typecode matcode)
-{
+char  *mm_typecode_to_str(MM_typecode matcode) {
     char buffer[MM_MAX_LINE_LENGTH];
     char *types[4];
     char *mm_strdup(const char *);
-    int error =0;
+    int error = 0;
 
     /* check for MTX type */
     if (mm_is_matrix(matcode))
         types[0] = (char *) MM_MTX_STR;
     else
-        error=1;
+        error = 1;
 
     /* check for CRD or ARR matrix */
     if (mm_is_sparse(matcode))
         types[1] = (char *) MM_SPARSE_STR;
-    else
-    if (mm_is_dense(matcode))
+    else if (mm_is_dense(matcode))
         types[1] = (char *) MM_DENSE_STR;
     else
         return NULL;
@@ -477,14 +475,11 @@ char  *mm_typecode_to_str(MM_typecode matcode)
     /* check for element data type */
     if (mm_is_real(matcode))
         types[2] = (char *) MM_REAL_STR;
-    else
-    if (mm_is_complex(matcode))
+    else if (mm_is_complex(matcode))
         types[2] = (char *) MM_COMPLEX_STR;
-    else
-    if (mm_is_pattern(matcode))
+    else if (mm_is_pattern(matcode))
         types[2] = (char *) MM_PATTERN_STR;
-    else
-    if (mm_is_integer(matcode))
+    else if (mm_is_integer(matcode))
         types[2] = (char *) MM_INT_STR;
     else
         return NULL;
@@ -493,19 +488,15 @@ char  *mm_typecode_to_str(MM_typecode matcode)
     /* check for symmetry type */
     if (mm_is_general(matcode))
         types[3] = (char *) MM_GENERAL_STR;
-    else
-    if (mm_is_symmetric(matcode))
+    else if (mm_is_symmetric(matcode))
         types[3] = (char *) MM_SYMM_STR;
-    else
-    if (mm_is_hermitian(matcode))
+    else if (mm_is_hermitian(matcode))
         types[3] = (char *) MM_HERM_STR;
-    else
-    if (mm_is_skew(matcode))
+    else if (mm_is_skew(matcode))
         types[3] = (char *) MM_SKEW_STR;
     else
         return NULL;
 
-    sprintf(buffer,"%s %s %s %s", types[0], types[1], types[2], types[3]);
+    sprintf(buffer, "%s %s %s %s", types[0], types[1], types[2], types[3]);
     return mm_strdup(buffer);
-
 }

@@ -2,7 +2,7 @@
 
 rm -f bin/experiments
 
-for i in `seq 0 9`;
+for i in `seq 0 10`;
 do
     cp ../test_data/input${i} bin/input
     cd bin; ./solution input output time

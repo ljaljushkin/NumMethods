@@ -29,20 +29,21 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
         {
             iw[A.Col[j]] = j;
         }
-
-        boolean flag = true;
-        if ((j1 >= j2) || (A.Col[j1] >= k)) 
-        {
-            flag = false;
-        }
-
-        for(j = j1; flag; j++)
-        {
-            if ((j >= j2) || (A.Col[j] >= k)) 
-            {
-                flag = false;
-            }
-
+// TODO: something wrong here!
+//        bool flag = true;
+//        if ((j1 >= j2) || (A.Col[j1] >= k))
+//        {
+//            flag = false;
+//        }
+//
+//        for(j = j1; flag; j++)
+//        {
+//            if ((j >= j2) || (A.Col[j] >= k))
+//            {
+//                flag = false;
+//            }
+         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+         {
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
@@ -58,11 +59,11 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
         }
         jrow = A.Col[j];
         uptr[k] = j;
-        // TODO: how to avoid break?
-        /*if((jrow != k) || (fabs(luval[j]) < EPSILON))
+        // TODO: how to avoid break? without it -inf for input10 file!
+        if((jrow != k) || (fabs(luval[j]) < EPSILON))
         {
             break;
-        }*/
+        }
         for(j = j1; j < j2; j++)
         {
             iw[A.Col[j]] = 0;
@@ -89,33 +90,28 @@ void getRowIndex(mtxMatrix* A, int* d) {
     }
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     FILE *input_file, *output_file, *time_file;
-    if (argc < 4)
-    {
+    if (argc < 4) {
         fprintf(stderr, "Invalid input parameters\n");
         fprintf(stderr, "Usage: %s inputfile outputfile timefile \n", argv[0]);
         exit(1);
     }
-    else
-    {
+    else {
         input_file = fopen(argv[1], "r");
         output_file = fopen(argv[2], "w");
         time_file = fopen(argv[3], "w");
-        if(!input_file || !output_file || !time_file)
+        if (!input_file || !output_file || !time_file)
             exit(1);
     }
 
     MM_typecode matcode;
-    if (mm_read_banner(input_file, &matcode) != 0)
-    {
+    if (mm_read_banner(input_file, &matcode) != 0) {
         printf("Could not process Matrix Market banner.\n");
         exit(1);
     }
 
-    if (!mm_is_matrix(matcode) || !mm_is_real(matcode) || !mm_is_coordinate(matcode))
-    {
+    if (!mm_is_matrix(matcode) || !mm_is_real(matcode) || !mm_is_coordinate(matcode)) {
         printf("Sorry, this application does not support ");
         printf("Market Market type: [%s]\n", mm_typecode_to_str(matcode));
         exit(1);
@@ -129,34 +125,35 @@ int main(int argc, char *argv[])
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
     inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
-	if (mm_is_symmetric(matcode))
-	{
-		InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - inputMatrix.N, fullMatrix);
-		TriangleToFull(&inputMatrix, &fullMatrix);
-	}
-	else
-		fullMatrix = inputMatrix;
-
-	int *diag = new int[fullMatrix.N];
-
-	for(int i = 0; i < fullMatrix.N + 1; i++) {
-        for(int j = fullMatrix.RowIndex[i]; j < fullMatrix.RowIndex[i + 1]; j++) {
-			if (i == fullMatrix.Col[j]) diag[i] = j;
-		}
+    if (mm_is_symmetric(matcode)) {
+        InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - inputMatrix.N, fullMatrix);
+        TriangleToFull(&inputMatrix, &fullMatrix);
+        FreeMatrix(inputMatrix);
+    }
+    else {
+        fullMatrix = inputMatrix;
     }
 
-    for(int i = 0; i < fullMatrix.N + 1; i++) {
-        printf("RowIndex[%i] = %i\n", i, fullMatrix.RowIndex[i]);
+    int *diag = new int[fullMatrix.N];
+
+    for (int i = 0; i < fullMatrix.N + 1; i++) {
+        for (int j = fullMatrix.RowIndex[i]; j < fullMatrix.RowIndex[i + 1]; j++) {
+            if (i == fullMatrix.Col[j]) diag[i] = j;
+        }
     }
 
-     
-    for(int i = 0; i < fullMatrix.N; i++) {
-            printf("input[%i]= %lf\n", i, fullMatrix.Value[inputMatrix.RowIndex[i]]);
-    }
-
-	for(int i = 0; i < fullMatrix.N; i++) {
-            printf("diag[%i]= %d\n", i, diag[i]);
-    }
+//    for (int i = 0; i < fullMatrix.N + 1; i++) {
+//        printf("RowIndex[%i] = %i\n", i, fullMatrix.RowIndex[i]);
+//    }
+//
+//
+//    for (int i = 0; i < fullMatrix.N; i++) {
+//        printf("input[%i]= %lf\n", i, fullMatrix.Value[inputMatrix.RowIndex[i]]);
+//    }
+//
+//    for (int i = 0; i < fullMatrix.N; i++) {
+//        printf("diag[%i]= %d\n", i, diag[i]);
+//    }
 
     timer.start();
     ilu0(fullMatrix, fullMatrix.Value, diag);
@@ -168,7 +165,6 @@ int main(int argc, char *argv[])
 
     WriteFullMatrix(fullMatrix, output_file, matcode);
 
-    FreeMatrix(inputMatrix);
     FreeMatrix(fullMatrix);
 
     return 0;
