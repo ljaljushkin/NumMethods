@@ -7,75 +7,62 @@
 const double EPSILON = 0.000001;
 
 
-int ilu0(mtxMatrix &A, double * luval, int * uptr)
-{
-     int j1, j2;
-     int jrow;
-     int k, j, jj;
-     int *iw = NULL;
-     int jw;
-     double t1;
+int ilu0(mtxMatrix &A, double * luval, int * uptr) {
+    int j1, j2;
+    int jrow;
+    int k, j, jj;
+    int *iw = NULL;
+    int jw;
+    double t1;
 
-     iw = new int[A.N];
-     memset(iw, 0, A.N * sizeof(int));
+    iw = new int[A.N];
+    memset(iw, 0, A.N * sizeof(int));
 
-     memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
+    memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
 
-     for(k = 0; k < A.N; k++)
-     {
+    bool flag1 = true;
+    for (k = 0; flag1; k++) {
         j1 = A.RowIndex[k];
         j2 = A.RowIndex[k + 1];
-        for(j = j1; j < j2; j++)
-        {
+        for (j = j1; j < j2; j++) {
             iw[A.Col[j]] = j;
         }
-// TODO: something wrong here!
-//        bool flag = true;
-//        if ((j1 >= j2) || (A.Col[j1] >= k))
-//        {
-//            flag = false;
-//        }
-//
-//        for(j = j1; flag; j++)
-//        {
-//            if ((j >= j2) || (A.Col[j] >= k))
-//            {
-//                flag = false;
-//            }
-         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
-         {
+
+        // TODO: something wrong here!
+        bool flag2 = (j1 > j2) && (A.Col[j1] < k);
+
+        for (j = j1; flag2; j++) {
+            //         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+            //         {
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
 
-            for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
-            {
+            for (jj = uptr[jrow] + 1; jj < A.RowIndex[jrow + 1]; jj++) {
                 jw = iw[A.Col[jj]];
-                if(jw != 0)
-                {
+                if (jw != 0) {
                     luval[jw] = luval[jw] - t1 * luval[jj];
                 }
             }
+            flag2 = (j < j2) && (A.Col[j + 1] < k);
         }
         jrow = A.Col[j];
         uptr[k] = j;
+
         // TODO: how to avoid break? without it -inf for input10 file!
-        if((jrow != k) || (fabs(luval[j]) < EPSILON))
-        {
-            break;
-        }
-        for(j = j1; j < j2; j++)
-        {
+        flag1 = (jrow != k) || (fabs(luval[j]) < EPSILON) || (k + 1 < A.N);
+
+        for (j = j1; j < j2; j++) {
             iw[A.Col[j]] = 0;
         }
-     }
+    }
 
-     delete [] iw;
-     if(k < A.N) {
-         return -(k+1);
-     }
+    delete[] iw;
+    if (k < A.N) {
+        return -(k + 1);
+    }
 
-     return 0;
+    return 0;
 }
 
 void getRowIndex(mtxMatrix* A, int* d) {
