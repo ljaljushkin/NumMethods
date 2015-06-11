@@ -15,6 +15,7 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
     int jw;
     double t1;
 
+    printf("ilu+ \n");
     iw = new int[A.N];
     memset(iw, 0, A.N * sizeof(int));
 
@@ -24,14 +25,18 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
     for (k = 0; flag1; k++) {
         j1 = A.RowIndex[k];
         j2 = A.RowIndex[k + 1];
+        printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
+
         for (j = j1; j < j2; j++) {
             iw[A.Col[j]] = j;
         }
 
         // TODO: something wrong here!
-        bool flag2 = (j1 > j2) && (A.Col[j1] < k);
+        bool flag2 = (j1 < j2) && (A.Col[j1] < k);
 
         for (j = j1; flag2; j++) {
+            printf("k=%d , j= %d+ \n", k, j);
+
             //         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
             //         {
             jrow = A.Col[j];
@@ -44,7 +49,7 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
                     luval[jw] = luval[jw] - t1 * luval[jj];
                 }
             }
-            flag2 = (j < j2) && (A.Col[j + 1] < k);
+            flag2 = (j + 1 < j2) && (A.Col[j + 1] < k);
         }
         jrow = A.Col[j];
         uptr[k] = j;
@@ -106,7 +111,7 @@ int main(int argc, char *argv[]) {
 
     mtxMatrix inputMatrix, fullMatrix;
     ReadMatrix(inputMatrix, input_file);
-
+    printf("read matrix -\n");
     Timer timer;
 
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);

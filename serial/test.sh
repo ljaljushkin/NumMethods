@@ -13,5 +13,15 @@ do
     cd ../
 done
 
+#sdiff bin/output ../test_data/output10
+diff bin/output ../test_data/output10
+
+if [ "$?" = "0" ]; then
+    echo "-------------->Files equal<------------------"
+else
+    echo "-------------->Files do not equal<-----------"
+
+fi
+
 #echo "Time results: "
 #cat bin/experiments
