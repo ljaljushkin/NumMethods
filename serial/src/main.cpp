@@ -9,7 +9,7 @@ const double EPSILON = 0.000001;
 int ilu0(mtxMatrix &A, double * luval, int * uptr)
 {
      int j1, j2;
-     int jrow;
+     int jrow = 0;
      int k, j, jj;
      int *iw = NULL;
      int jw;
@@ -24,12 +24,14 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
      {
         j1 = A.RowIndex[k];
         j2 = A.RowIndex[k + 1];
+		printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
         for(j = j1; j < j2; j++)
         {
             iw[A.Col[j]] = j;
         }
         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
         {
+			printf("k=%d , j= %d \n", k, j);
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
