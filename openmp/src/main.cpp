@@ -15,30 +15,24 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
     int jw;
     double t1;
 
-    printf("ilu+ \n");
     iw = new int[A.N];
     memset(iw, 0, A.N * sizeof(int));
 
     memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
 
     bool flag1 = true;
-    for (k = 0; flag1; k++) {
+    #pragma omp parallel for
+    for (k = 0; flag1 != false; k++) {
         j1 = A.RowIndex[k];
         j2 = A.RowIndex[k + 1];
-        printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
 
         for (j = j1; j < j2; j++) {
             iw[A.Col[j]] = j;
         }
 
-        // TODO: something wrong here!
         bool flag2 = (j1 < j2) && (A.Col[j1] < k);
 
         for (j = j1; flag2; j++) {
-            printf("k=%d , j= %d \n", k, j);
-
-            //         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
-            //         {
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
@@ -54,7 +48,6 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
         jrow = A.Col[j];
         uptr[k] = j;
 
-        // TODO: how to avoid break? without it -inf for input10 file!
         flag1 = !((jrow != k) || (fabs(luval[j]) < EPSILON)) && (k + 1 < A.N);
 
         for (j = j1; j < j2; j++) {
@@ -111,7 +104,6 @@ int main(int argc, char *argv[]) {
 
     mtxMatrix inputMatrix, fullMatrix;
     ReadMatrix(inputMatrix, input_file);
-    printf("read matrix -\n");
     Timer timer;
 
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
