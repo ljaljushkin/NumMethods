@@ -35,7 +35,7 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
         bool flag2 = (j1 < j2) && (A.Col[j1] < k);
 
         for (j = j1; flag2; j++) {
-            printf("k=%d , j= %d+ \n", k, j);
+            printf("k=%d , j= %d \n", k, j);
 
             //         for(j = j1; (j < j2) && (A.Col[j] < k); j++)
             //         {
@@ -55,7 +55,7 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
         uptr[k] = j;
 
         // TODO: how to avoid break? without it -inf for input10 file!
-        flag1 = (jrow != k) || (fabs(luval[j]) < EPSILON) || (k + 1 < A.N);
+        flag1 = !((jrow != k) || (fabs(luval[j]) < EPSILON)) || (k + 1 < A.N);
 
         for (j = j1; j < j2; j++) {
             iw[A.Col[j]] = 0;
