@@ -9,67 +9,67 @@ const double EPSILON = 0.000001;
 
 int ilu0(mtxMatrix &A, double * luval, int * uptr) {
     int jrow = 0;
-	int jstatus = 0;
+    int jstatus = 0;
     int *iw = NULL;
     int jw = 0;
-	int jj = 0;
+    int jj = 0;
     double t1;
 
-	iw = new int[A.N];
-	memset(iw, 0, A.N * sizeof(int));
+    iw = new int[A.N];
+    memset(iw, 0, A.N * sizeof(int));
     memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
 
     bool flag1 = true;
-		
-	for (int k = 0; (k < A.N) && flag1; k++) {
-		int j1 = A.RowIndex[k];
-		int j2 = A.RowIndex[k + 1];
+
+    for (int k = 0; (k < A.N) && flag1; k++) {
+        int j1 = A.RowIndex[k];
+        int j2 = A.RowIndex[k + 1];
 
 
-		//if (!flag1) continue;
-		printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
-		
-		for (int j = j1; j < j2; j++) {
-			iw[A.Col[j]] = j;
-		}
+        //if (!flag1) continue;
+        // printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
 
-		int j = j1;
-		int jstatus = j1;
-		bool flag2;
+        for (int j = j1; j < j2; j++) {
+            iw[A.Col[j]] = j;
+        }
 
-		#pragma omp parallel private(j, jj, jrow, t1, jw, flag2)
-		{		
-			flag2 = (j1 < j2) && (A.Col[j1] < k);
-			#pragma omp for
-			for (j = j1; j < j2; j++) {
-				flag2 = (A.Col[j] < k);
-				if (!flag2) continue;
-				printf("k=%d , j= %d \n", k, j);
-			
-				jrow = A.Col[j];
-				t1 = luval[j] / luval[uptr[jrow]];
-				luval[j] = t1;
+        int j = j1;
+        int jstatus = j1;
+        bool flag2;
 
-				for (jj = uptr[jrow] + 1; jj < A.RowIndex[jrow + 1]; jj++) {
-					jw = iw[A.Col[jj]];
-					if (jw != 0) {
-						luval[jw] = luval[jw] - t1 * luval[jj];
-					}
-				}
-				flag2 = (j + 1 < j2) && (A.Col[j + 1] < k);
-				if (!flag2) jstatus = j + 1;
-			}
-		}
-		j = jstatus;
-		jrow = A.Col[j];
-		uptr[k] = j;
+        #pragma omp parallel private(j, jj, jrow, t1, jw, flag2)
+        {
+            flag2 = (j1 < j2) && (A.Col[j1] < k);
+            #pragma omp for
+            for (j = j1; j < j2; j++) {
+                flag2 = (A.Col[j] < k);
+                if (!flag2) continue;
+                // printf("k=%d , j= %d \n", k, j);
 
-		flag1 = !((jrow != k) || (fabs(luval[j]) < EPSILON)) && (k + 1 < A.N);
+                jrow = A.Col[j];
+                t1 = luval[j] / luval[uptr[jrow]];
+                luval[j] = t1;
 
-		for (j = j1; j < j2; j++) {
-			iw[A.Col[j]] = 0;
-		}
-	}
+                for (jj = uptr[jrow] + 1; jj < A.RowIndex[jrow + 1]; jj++) {
+                    jw = iw[A.Col[jj]];
+                    if (jw != 0) {
+                        luval[jw] = luval[jw] - t1 * luval[jj];
+                    }
+                }
+                flag2 = (j + 1 < j2) && (A.Col[j + 1] < k);
+                if (!flag2) jstatus = j + 1;
+            }
+        }
+        j = jstatus;
+        jrow = A.Col[j];
+        uptr[k] = j;
+
+        flag1 = !((jrow != k) || (fabs(luval[j]) < EPSILON)) && (k + 1 < A.N);
+
+        for (j = j1; j < j2; j++) {
+            iw[A.Col[j]] = 0;
+        }
+    }
 
     delete[] iw;
 
