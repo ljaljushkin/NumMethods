@@ -3,17 +3,18 @@
 #include "timer.h"
 #include <fstream>
 #include "memory.h"
+#include <omp.h>
 
 const double EPSILON = 0.000001;
 
 
 int ilu0(mtxMatrix &A, double * luval, int * uptr) {
-    int jrow = 0;
-	int jstatus = 0;
-    int *iw = NULL;
-    int jw = 0;
-	int jj = 0;
-    double t1;
+	int j1, j2;
+	int jrow = 0;
+	int k, j, jj;
+	int *iw = NULL;
+	int jw;
+	double t1;
 
 	iw = new int[A.N];
 	memset(iw, 0, A.N * sizeof(int));
@@ -21,54 +22,41 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
 
     bool flag1 = true;
 		
-	for (int k = 0; (k < A.N) && flag1; k++) {
-		int j1 = A.RowIndex[k];
-		int j2 = A.RowIndex[k + 1];
-
-
-		//if (!flag1) continue;
+	for (int k = 0; k < A.N; k++) {
+		j1 = A.RowIndex[k];
+        j2 = A.RowIndex[k + 1];
 		printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
-		
-		for (int j = j1; j < j2; j++) {
-			iw[A.Col[j]] = j;
-		}
+        for(j = j1; j < j2; j++)
+        {
+            iw[A.Col[j]] = j;
+        }
+        for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+        {
+			printf("k=%d , j= %d \n", k, j);
+            jrow = A.Col[j];
+            t1 = luval[j] / luval[uptr[jrow]];
+            luval[j] = t1;
 
-		int j = j1;
-		int jstatus = j1;
-		bool flag2;
-
-		#pragma omp parallel private(j, jj, jrow, t1, jw, flag2)
-		{		
-			flag2 = (j1 < j2) && (A.Col[j1] < k);
-			#pragma omp for
-			for (j = j1; j < j2; j++) {
-				flag2 = (A.Col[j] < k);
-				if (!flag2) continue;
-				printf("k=%d , j= %d \n", k, j);
-			
-				jrow = A.Col[j];
-				t1 = luval[j] / luval[uptr[jrow]];
-				luval[j] = t1;
-
-				for (jj = uptr[jrow] + 1; jj < A.RowIndex[jrow + 1]; jj++) {
-					jw = iw[A.Col[jj]];
-					if (jw != 0) {
-						luval[jw] = luval[jw] - t1 * luval[jj];
-					}
-				}
-				flag2 = (j + 1 < j2) && (A.Col[j + 1] < k);
-				if (!flag2) jstatus = j + 1;
-			}
-		}
-		j = jstatus;
-		jrow = A.Col[j];
-		uptr[k] = j;
-
-		flag1 = !((jrow != k) || (fabs(luval[j]) < EPSILON)) && (k + 1 < A.N);
-
-		for (j = j1; j < j2; j++) {
-			iw[A.Col[j]] = 0;
-		}
+			#pragma omp parallel for private(jw) 
+            for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
+            {
+                jw = iw[A.Col[jj]];
+                if(jw != 0)
+                {
+                    luval[jw] = luval[jw] - t1 * luval[jj];
+                }
+            }
+        }
+        jrow = A.Col[j];
+        uptr[k] = j;
+        if((jrow != k) || (fabs(luval[j]) < EPSILON))
+        {
+            break;
+        }
+        for(j = j1; j < j2; j++)
+        {
+            iw[A.Col[j]] = 0;
+        }
 	}
 
     delete[] iw;
@@ -147,9 +135,9 @@ int main(int argc, char *argv[]) {
 //    for (int i = 0; i < fullMatrix.N; i++) {
 //        printf("input[%i]= %lf\n", i, fullMatrix.Value[inputMatrix.RowIndex[i]]);
 //    }
-//
-//    for (int i = 0; i < fullMatrix.N; i++) {
-//        printf("diag[%i]= %d\n", i, diag[i]);
+
+//   for (int i = 0; i < fullMatrix.N; i++) {
+//       printf("diag[%i]= %d\n", i, diag[i]);
 //    }
 
     timer.start();
