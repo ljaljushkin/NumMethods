@@ -16,12 +16,11 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr) {
 	int jw;
 	double t1;
 
-	iw = new int[A.N];
-	memset(iw, 0, A.N * sizeof(int));
+    iw = new int[A.N];
+    memset(iw, 0, A.N * sizeof(int));
     memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
 
     bool flag1 = true;
-		
 	for (int k = 0; k < A.N; k++) {
 		j1 = A.RowIndex[k];
         j2 = A.RowIndex[k + 1];
