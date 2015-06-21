@@ -30,5 +30,8 @@ int WriteFullMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcod
 
 int ReadMatrix(mtxMatrix &mtx, FILE *fileName);
 
-#endif // __UTIL_H__
+void Transpose(mtxMatrix imtx, mtxMatrix &omtx);
 
+int Multiplicate(mtxMatrix A, mtxMatrix B, mtxMatrix &C);
+
+#endif // __UTIL_H__

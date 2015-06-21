@@ -1,65 +1,116 @@
 #include "util.h"
-#include "mmio.h"
 #include "timer.h"
 #include <fstream>
 #include "memory.h"
 
 const double EPSILON = 0.000001;
 
+void LUmatrixSeparation(mtxMatrix ilu, int *uptr, mtxMatrix &L, mtxMatrix &U)
+{
+	int countL, countU;
+	int i, j, s, f, k;
+	double *val;
+	int *col;
+	countU = 0;
+	for(i = 0; i < ilu.N; i++)
+	{
+		countU += (ilu.RowIndex[i+1] - uptr[i]);
+	}
+	countL = ilu.NZ + ilu.N - countU;
+	InitializeMatrix(ilu.N, countL, L);
+	InitializeMatrix(ilu.N, countU, U);
+	k = 0;
+	val = L.Value; col = L.Col;
+	L.RowIndex[0] = k;
+	for(i = 0; i < ilu.N; i++)
+	{
+		s = ilu.RowIndex[i];
+		f = uptr[i];
+		for(j = s; j < f; j++)
+		{
+			val[k] = ilu.Value[j];
+			col[k] = ilu.Col[j];
+			k++;
+		}
+		val[k] = 1.0; col[k] = i;
+		k++;
+		L.RowIndex[i + 1] = k;
+	}
+	k = 0;
+	val = U.Value;
+	col = U.Col;
+	U.RowIndex[0] = k;
+	for(i = 0; i < ilu.N; i++)
+	{
+		s = uptr[i];
+		f = ilu.RowIndex[i + 1];
+		for(j = s; j < f; j++)
+		{
+			val[k] = ilu.Value[j];
+			col[k] = ilu.Col[j];
+			k++;
+		}
+		U.RowIndex[i + 1] = k;
+	}
+}
 
-int ilu0(mtxMatrix &A, double * luval, int * uptr) {
-    int j1, j2;
-    int jrow;
-    int k, j, jj;
-    int *iw = NULL;
-    int jw;
-    double t1;
+int ilu0(mtxMatrix &A, double * luval, int * uptr)
+{
+     int j1, j2;
+     int jrow = 0;
+     int k, j, jj;
+     int *iw = NULL;
+     int jw;
+     double t1;
 
-    iw = new int[A.N];
-    memset(iw, 0, A.N * sizeof(int));
+     iw = new int[A.N];
+     memset(iw, 0, A.N * sizeof(int));
 
-    memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
+     memcpy(luval, A.Value, A.RowIndex[A.N] * sizeof(double));
 
-    bool flag1 = true;
-    for (k = 0; flag1 != false; k++) {
+     for(k = 0; k < A.N; k++)
+     {
         j1 = A.RowIndex[k];
         j2 = A.RowIndex[k + 1];
-
-        for (j = j1; j < j2; j++) {
+        // printf("k= %d, j1= %d, j2= %d \n", k, j1 , j2);
+        for(j = j1; j < j2; j++)
+        {
             iw[A.Col[j]] = j;
         }
-
-        bool flag2 = (j1 < j2) && (A.Col[j1] < k);
-
-        for (j = j1; flag2; j++) {
+        for(j = j1; (j < j2) && (A.Col[j] < k); j++)
+        {
+            // printf("k=%d , j= %d \n", k, j);
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
 
-            for (jj = uptr[jrow] + 1; jj < A.RowIndex[jrow + 1]; jj++) {
+            for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
+            {
                 jw = iw[A.Col[jj]];
-                if (jw != 0) {
+                if(jw != 0)
+                {
                     luval[jw] = luval[jw] - t1 * luval[jj];
                 }
             }
-            flag2 = (j + 1 < j2) && (A.Col[j + 1] < k);
         }
         jrow = A.Col[j];
         uptr[k] = j;
-
-        flag1 = !((jrow != k) || (fabs(luval[j]) < EPSILON)) && (k + 1 < A.N);
-
-        for (j = j1; j < j2; j++) {
+        if((jrow != k) || (fabs(luval[j]) < EPSILON))
+        {
+            break;
+        }
+        for(j = j1; j < j2; j++)
+        {
             iw[A.Col[j]] = 0;
         }
-    }
+     }
 
-    delete[] iw;
-    if (k < A.N) {
-        return -(k + 1);
-    }
+     delete [] iw;
+     if(k < A.N) {
+         return -(k+1);
+     }
 
-    return 0;
+     return 0;
 }
 
 void getRowIndex(mtxMatrix* A, int* d) {
@@ -68,7 +119,7 @@ void getRowIndex(mtxMatrix* A, int* d) {
     curr_ind++;
     for(int i = 0; i < A->NZ; i++) {
         if(A->Row[i] != A->Row[i+1]) {
-            d[curr_ind] = i+1;
+            d[curr_ind] = i + 1;
             curr_ind++;
         }
     }
@@ -101,15 +152,23 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    mtxMatrix inputMatrix, fullMatrix;
+    mtxMatrix inputMatrix, fullMatrix, LMatrix, UMatrix, UMatrixTranspose, MMatrix;
     ReadMatrix(inputMatrix, input_file);
+
     Timer timer;
 
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
     inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
+	int diagNum = 0;
+	for (int i = 0; i < inputMatrix.N + 1; i++) {
+        for (int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
+            if (i == inputMatrix.Col[j]) diagNum++;
+        }
+    }
+
     if (mm_is_symmetric(matcode)) {
-        InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - inputMatrix.N, fullMatrix);
+        InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - diagNum, fullMatrix);
         TriangleToFull(&inputMatrix, &fullMatrix);
         FreeMatrix(inputMatrix);
     }
@@ -140,13 +199,16 @@ int main(int argc, char *argv[]) {
 
     timer.start();
     ilu0(fullMatrix, fullMatrix.Value, diag);
+	LUmatrixSeparation(fullMatrix, diag, LMatrix, UMatrix);
+	Transpose(UMatrix, UMatrixTranspose);
+	Multiplicate(LMatrix, UMatrixTranspose, MMatrix);
     timer.stop();
 
     std::ofstream timeLog;
     timeLog.open(argv[3]);
     timeLog << timer.getElapsed();
 
-    WriteFullMatrix(fullMatrix, output_file, matcode);
+    WriteFullMatrix(MMatrix, output_file, matcode);
 
     FreeMatrix(fullMatrix);
 

@@ -1,4 +1,14 @@
+#include <vector>
+#include <stdlib.h>
+#include <math.h>
+#include "memory.h"
+
 #include "util.h"
+
+using namespace std;
+using namespace tbb;
+
+const double ZERO_IN_CRS = 0.000001;
 
 void InitializeMatrix(int N, int NZ, mtxMatrix &mtx)
 {
@@ -78,7 +88,7 @@ int WriteFullMatrix(mtxMatrix &output_mtx, FILE *output_file, MM_typecode matcod
     for (int i = 0; i < output_mtx.N; i++)
         for(int j = output_mtx.RowIndex[i]; j < output_mtx.RowIndex[i + 1]; j++)
         {
-            fprintf(output_file, "%d %d %.10lf\n", output_mtx.Col[j]+1, i + 1, output_mtx.Value[j]);
+            fprintf(output_file, "%d %d %.10lf\n", i + 1, output_mtx.Col[j] + 1, output_mtx.Value[j]);
         }
 
     return 0;
@@ -98,4 +108,89 @@ int ReadMatrix(mtxMatrix &mtx, FILE* inputfile) {
     }
     fclose(inputfile);
     return 0;
+}
+
+void Transpose(mtxMatrix imtx, mtxMatrix &omtx)
+{
+	int i, j;
+
+	InitializeMatrix(imtx.N, imtx.NZ, omtx);
+
+	memset(omtx.RowIndex, 0, (imtx.N + 1) * sizeof(int));
+	for (i = 0; i < imtx.NZ; i++) 
+		omtx.RowIndex[imtx.Col[i] + 1]++;
+  
+	int S = 0;
+	for (i = 1; i <= imtx.N; i++) 
+	{
+		int tmp = omtx.RowIndex[i];
+		omtx.RowIndex[i] = S;
+		S = S + tmp;
+	}
+
+	for (i = 0; i < imtx.N; i++) 
+	{
+		int j1 = imtx.RowIndex[i];
+		int j2 = imtx.RowIndex[i+1];
+		int Col = i; // Столбец в AT - строка в А
+		for (j = j1; j < j2; j++) 
+		{
+			double V = imtx.Value[j];  // Значение
+			int RIndex = imtx.Col[j];  // Строка в AT
+			int IIndex = omtx.RowIndex[RIndex + 1];
+			omtx.Value[IIndex] = V;
+			omtx.Col  [IIndex] = Col;
+			omtx.RowIndex[RIndex + 1]++;
+		}
+	}
+}
+
+// Принимает 2 квадратных матрицы в формате CRS (3 массива, индексация с нуля)
+// Возвращает C = A * B, C - в формате CRS (3 массива, индексация с нуля)
+//   Память для C в начале считается не выделенной
+// Возвращает признак успешности операции: 0 - ОК, 1 - не совпадают размеры (N)
+int Multiplicate(mtxMatrix A, mtxMatrix B, mtxMatrix &C)
+{
+	if (A.N != B.N)
+	return 1;
+
+	int N = A.N;
+	int i;
+
+	task_scheduler_init init();
+
+	vector<int>* columns = new vector<int>[N];
+	vector<double> *values = new vector<double>[N];
+	int* row_index = new int[N + 1];
+	memset(row_index, 0, sizeof(int) * N);
+
+	int grainsize = 10;
+
+	parallel_for(blocked_range<int>(0, A.N, grainsize),
+		Multiplicator(A, B, columns, values, row_index));
+
+	int NZ = 0;
+	for(i = 0; i < N; i++) {
+		int tmp = row_index[i];
+		row_index[i] = NZ;
+		NZ += tmp;
+	}
+	row_index[N] = NZ;
+
+	InitializeMatrix(N, NZ, C);
+
+	int count = 0;
+	for (i = 0; i < N; i++) {
+		int size = columns[i].size();
+		memcpy(&C.Col[count], &columns[i][0], size * sizeof(int));
+		memcpy(&C.Value[count], &values[i][0], size * sizeof(double));
+		count += size;
+	}
+	memcpy(C.RowIndex, &row_index[0], (N + 1) * sizeof(int));
+
+	delete [] row_index;
+	delete [] columns;
+	delete [] values;
+
+	return 0;
 }

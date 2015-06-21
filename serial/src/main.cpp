@@ -5,6 +5,54 @@
 
 const double EPSILON = 0.000001;
 
+void LUmatrixSeparation(mtxMatrix ilu, int *uptr, mtxMatrix &L, mtxMatrix &U)
+{
+	int countL, countU;
+	int i, j, s, f, k;
+	double *val;
+	int *col;
+	countU = 0;
+	for(i = 0; i < ilu.N; i++)
+	{
+		countU += (ilu.RowIndex[i+1] - uptr[i]);
+	}
+	countL = ilu.NZ + ilu.N - countU;
+	InitializeMatrix(ilu.N, countL, L);
+	InitializeMatrix(ilu.N, countU, U);
+	k = 0;
+	val = L.Value; col = L.Col;
+	L.RowIndex[0] = k;
+	for(i = 0; i < ilu.N; i++)
+	{
+		s = ilu.RowIndex[i];
+		f = uptr[i];
+		for(j = s; j < f; j++)
+		{
+			val[k] = ilu.Value[j];
+			col[k] = ilu.Col[j];
+			k++;
+		}
+		val[k] = 1.0; col[k] = i;
+		k++;
+		L.RowIndex[i + 1] = k;
+	}
+	k = 0;
+	val = U.Value;
+	col = U.Col;
+	U.RowIndex[0] = k;
+	for(i = 0; i < ilu.N; i++)
+	{
+		s = uptr[i];
+		f = ilu.RowIndex[i + 1];
+		for(j = s; j < f; j++)
+		{
+			val[k] = ilu.Value[j];
+			col[k] = ilu.Col[j];
+			k++;
+		}
+		U.RowIndex[i + 1] = k;
+	}
+}
 
 int ilu0(mtxMatrix &A, double * luval, int * uptr)
 {
@@ -71,7 +119,7 @@ void getRowIndex(mtxMatrix* A, int* d) {
     curr_ind++;
     for(int i = 0; i < A->NZ; i++) {
         if(A->Row[i] != A->Row[i+1]) {
-            d[curr_ind] = i+1;
+            d[curr_ind] = i + 1;
             curr_ind++;
         }
     }
@@ -104,7 +152,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    mtxMatrix inputMatrix, fullMatrix;
+    mtxMatrix inputMatrix, fullMatrix, LMatrix, UMatrix, UMatrixTranspose, MMatrix;
     ReadMatrix(inputMatrix, input_file);
 
     Timer timer;
@@ -112,8 +160,15 @@ int main(int argc, char *argv[]) {
     getRowIndex(&inputMatrix, inputMatrix.RowIndex);
     inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
+	int diagNum = 0;
+	for (int i = 0; i < inputMatrix.N + 1; i++) {
+        for (int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
+            if (i == inputMatrix.Col[j]) diagNum++;
+        }
+    }
+
     if (mm_is_symmetric(matcode)) {
-        InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - inputMatrix.N, fullMatrix);
+        InitializeMatrix(inputMatrix.N, 2 * inputMatrix.NZ - diagNum, fullMatrix);
         TriangleToFull(&inputMatrix, &fullMatrix);
         FreeMatrix(inputMatrix);
     }
@@ -144,13 +199,16 @@ int main(int argc, char *argv[]) {
 
     timer.start();
     ilu0(fullMatrix, fullMatrix.Value, diag);
+	LUmatrixSeparation(fullMatrix, diag, LMatrix, UMatrix);
+	Transpose(UMatrix, UMatrixTranspose);
+	Multiplicate(LMatrix, UMatrixTranspose, MMatrix);
     timer.stop();
 
     std::ofstream timeLog;
     timeLog.open(argv[3]);
     timeLog << timer.getElapsed();
 
-    WriteFullMatrix(fullMatrix, output_file, matcode);
+    WriteFullMatrix(MMatrix, output_file, matcode);
 
     FreeMatrix(fullMatrix);
 
