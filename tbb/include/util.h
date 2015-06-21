@@ -6,12 +6,19 @@
 #include <math.h>
 #include <stdio.h>
 #include "mmio.h"
+#include <vector>
+#include <stdlib.h>
+#include <math.h>
+#include "memory.h"
 
 #include "tbb/task_scheduler_init.h"
 #include "tbb/blocked_range.h"
 #include "tbb/parallel_for.h"
 
+using namespace std;
 using namespace tbb;
+
+const double ZERO_IN_CRS = 0.000001;
 
 struct mtxMatrix {
     int N;
@@ -32,7 +39,7 @@ class Multiplicator
 	int *row_index;
 	public:
 
-	Multiplicator(crsMatrix& _A, crsMatrix& _B, vector<int>* &_columns, 
+	Multiplicator(mtxMatrix& _A, mtxMatrix& _B, vector<int>* &_columns, 
 		vector<double>* &_values, int *_row_index) :
 		A(_A), B(_B), columns(_columns), values(_values), row_index(_row_index)
 	{}

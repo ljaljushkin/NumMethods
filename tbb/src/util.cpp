@@ -1,14 +1,7 @@
-#include <vector>
-#include <stdlib.h>
-#include <math.h>
-#include "memory.h"
-
 #include "util.h"
 
 using namespace std;
 using namespace tbb;
-
-const double ZERO_IN_CRS = 0.000001;
 
 void InitializeMatrix(int N, int NZ, mtxMatrix &mtx)
 {

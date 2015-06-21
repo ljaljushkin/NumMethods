@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
 	int diagNum = 0;
-	for (int i = 0; i < inputMatrix.N + 1; i++) {
+	for (int i = 0; i < inputMatrix.N; i++) {
         for (int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
             if (i == inputMatrix.Col[j]) diagNum++;
         }
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
 
     int *diag = new int[fullMatrix.N];
 
-    for (int i = 0; i < fullMatrix.N + 1; i++) {
+    for (int i = 0; i < fullMatrix.N; i++) {
         for (int j = fullMatrix.RowIndex[i]; j < fullMatrix.RowIndex[i + 1]; j++) {
             if (i == fullMatrix.Col[j]) diag[i] = j;
         }
