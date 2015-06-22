@@ -2,9 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "memory.h"
-#include <cilk/cilk.h> 
-#include <cilk/cilk_api.h> 
-#include <cilk/reducer_max.h>
 
 #include "util.h"
 
@@ -158,7 +155,6 @@ int Multiplicate(mtxMatrix A, mtxMatrix B, mtxMatrix &C)
 		return 1;
 
 	int N = A.N;
-	int i, j, k;
 
 	vector<int>* columns = new vector<int>[N];
 	vector<double> *values = new vector<double>[N];
@@ -168,26 +164,25 @@ int Multiplicate(mtxMatrix A, mtxMatrix B, mtxMatrix &C)
 
 	int chunk = 10;
 	int *temp = new int[N];
-	#pragma omp for private(j, k)
-	for (i = 0; i < N; i++) {
+	cilk_for (int i = 0; i < N; i++) {
 		// i-я строка матрицы A
 		// Обнуляем массив указателей на элементы
 		memset(temp, -1, N * sizeof(int));
 		// Идем по ненулевым элементам строки и заполняем массив указателей
 		int ind1 = A.RowIndex[i], ind2 = A.RowIndex[i + 1];
-		for (j = ind1; j < ind2; j++) {
+		for (int j = ind1; j < ind2; j++) {
 			int col = A.Col[j];
 			temp[col] = j; // Значит, что a[i, НОМЕР] лежит 
 			// в ячейке массива Value с номером temp[НОМЕР]
 		}
 		// Построен индекс строки i матрицы A
 		// Теперь необходимо умножить ее на каждую из строк матрицы BT
-		for (j = 0; j < N; j++) {
+		for (int j = 0; j < N; j++) {
 			// j-я строка матрицы B
 			double sum = 0;
 			int ind3 = B.RowIndex[j], ind4 = B.RowIndex[j + 1];
 			// Все ненулевые элементы строки j матрицы B
-			for (k = ind3; k < ind4; k++) {
+			for (int k = ind3; k < ind4; k++) {
 				int bcol = B.Col[k];
 				int aind = temp[bcol];
 				if (aind != -1)
@@ -200,10 +195,11 @@ int Multiplicate(mtxMatrix A, mtxMatrix B, mtxMatrix &C)
 			}
 		}
 	}
+	cilk_sync;
 	delete [] temp;
 
 	int NZ = 0;
-	for(i = 0; i < N; i++) {
+	for(int i = 0; i < N; i++) {
 		int tmp = row_index[i];
 		row_index[i] = NZ;
 		NZ += tmp;
@@ -213,7 +209,7 @@ int Multiplicate(mtxMatrix A, mtxMatrix B, mtxMatrix &C)
 	InitializeMatrix(N, NZ, C);
 
 	int count = 0;
-	for (i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 		int size = columns[i].size();
 		memcpy(&C.Col[count], &columns[i][0], size * sizeof(int));
 		memcpy(&C.Value[count], &values[i][0], size * sizeof(double));

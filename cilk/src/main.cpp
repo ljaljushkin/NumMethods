@@ -58,9 +58,8 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
 {
      int j1, j2;
      int jrow = 0;
-     int k, j, jj;
+     int k, j;
      int *iw = NULL;
-     int jw;
      double t1;
 
      iw = new int[A.N];
@@ -83,16 +82,17 @@ int ilu0(mtxMatrix &A, double * luval, int * uptr)
             jrow = A.Col[j];
             t1 = luval[j] / luval[uptr[jrow]];
             luval[j] = t1;
-
-			#pragma omp parallel for private(jw) 
-            for(jj = uptr[jrow]+1; jj < A.RowIndex[jrow + 1]; jj++)
+			
+            cilk_for(int jj = uptr[jrow] + 1; jj < A.RowIndex[jrow + 1]; jj++)
             {
+				int jw;
                 jw = iw[A.Col[jj]];
                 if(jw != 0)
                 {
                     luval[jw] = luval[jw] - t1 * luval[jj];
                 }
             }
+			cilk_sync;
         }
         jrow = A.Col[j];
         uptr[k] = j;
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     inputMatrix.RowIndex[inputMatrix.N] = inputMatrix.NZ;
 
 	int diagNum = 0;
-	for (int i = 0; i < inputMatrix.N + 1; i++) {
+	for (int i = 0; i < inputMatrix.N; i++) {
         for (int j = inputMatrix.RowIndex[i]; j < inputMatrix.RowIndex[i + 1]; j++) {
             if (i == inputMatrix.Col[j]) diagNum++;
         }
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
 
     int *diag = new int[fullMatrix.N];
 
-    for (int i = 0; i < fullMatrix.N + 1; i++) {
+    for (int i = 0; i < fullMatrix.N; i++) {
         for (int j = fullMatrix.RowIndex[i]; j < fullMatrix.RowIndex[i + 1]; j++) {
             if (i == fullMatrix.Col[j]) diag[i] = j;
         }

@@ -6,6 +6,9 @@
 #include <math.h>
 #include <stdio.h>
 #include "mmio.h"
+#include <cilk/cilk.h> 
+#include <cilk/cilk_api.h> 
+#include <cilk/reducer_max.h>
 
 struct mtxMatrix {
     int N;
